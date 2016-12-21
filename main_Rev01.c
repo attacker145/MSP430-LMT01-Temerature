@@ -118,14 +118,17 @@ void main(void)
 
 	WDT_A_hold(WDT_A_BASE); //Stop watchdog timer
 
-//Initialize GPIO
+	//Initialize GPIO
     //P2DIR |= BIT0;                // P2.0/LED output direction
 	//Select CBOUT function on P1.6/CBOUT and set P1.6 to output direction
 	GPIO_setAsPeripheralModuleFunctionOutputPin(GPIO_PORT_P1, GPIO_PIN6);
 	//Set P2.0 to output direction
 	GPIO_setAsOutputPin(GPIO_PORT_P2, GPIO_PIN0);
-    P2DIR |= BIT2;
-    P7DIR |= BIT4;
+	P2DIR |= BIT0;		// P2.0 set as output
+	P2DIR |= BIT1;		// P2.1 set as output
+    P2DIR |= BIT2;		// P2.2 set as output
+    P4DIR |= BIT7;		// P4.7 set as output Onboard GREEN LED
+    P1DIR |= BIT0;		// P1.0 set as output Onboard RED LED
 //**************************************************************************************
 //Real Time Clock: Initialize Calendar Mode of RTC
    // Select XT1
@@ -247,6 +250,8 @@ void main(void)
 
     __enable_interrupt();  // Enable interrupts globally
 
+    GPIO_setOutputHighOnPin(GPIO_PORT_P4,GPIO_PIN7); // Turn ON green LED P4.7
+
     while (1)
     {
 
@@ -254,24 +259,22 @@ void main(void)
     	uint16_t count;
 
     	// Check the USB state and directly main loop accordingly
-    	switch (USB_getConnectionState())
+    	switch (USB_getConnectionState()) // Returns the state of the USB connection
     	{
-    		// This case is executed while your device is enumerated on the
-    	    // USB host
+    		// This case is executed while your device is enumerated on the USB host
     	    case ST_ENUM_ACTIVE:
-
+    	    	GPIO_setOutputHighOnPin(GPIO_PORT_P1,GPIO_PIN0); // Turn ON red LED P1.0
     	    	// Sleep if there are no bytes to process.
     	    	__disable_interrupt();
 
-    	    	if (!USBCDC_getBytesInUSBBuffer(CDC0_INTFNUM)) {
+    	    	if (!USBCDC_getBytesInUSBBuffer(CDC0_INTFNUM)) { // Returns how many bytes are in the buffer are received and ready to be read.
     	    		// Enter LPM0 until awakened by an event handler
     	    		__bis_SR_register(LPM0_bits + GIE);
     	    	}
 
     	    	__enable_interrupt();
 
-    	    	// Exit LPM because of a data-receive event, and
-    	    	// fetch the received data
+    	    	// Exit LPM because of a data-receive event, and fetch the received data   !!!!!
     	    	if (bCDCDataReceived_event){
 
     	    		// Clear flag early -- just in case execution breaks
@@ -281,6 +284,8 @@ void main(void)
     	    		count = USBCDC_receiveDataInBuffer((uint8_t*)dataBuffer,
     	    				BUFFER_SIZE,
 							CDC0_INTFNUM);
+
+    	    		GPIO_setOutputLowOnPin(GPIO_PORT_P4,GPIO_PIN7); // Turn OFF green LED P4.7
 
     	    		// Count has the number of bytes received into dataBuffer
     	    		// Echo back to the host.
